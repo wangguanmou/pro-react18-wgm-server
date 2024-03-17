@@ -1,37 +1,23 @@
-const query = require('../utils/query')
 const { sign } = require('../utils/jwt')
-const { findUser, insterUser } = require('../service/users')
+const { findUser, insterUser, findUserInfo } = require('../service/users')
 
 class UserController {
   async registry(ctx, next) {
-    // 拿到参数
+    // 参数
     const { username, password } = ctx.request.body
-    // 查重
-    const sql = `select *
-								 from users
-								 where username = '${username}'`
-    const arrList = await query(sql)
-    if (arrList.length > 0) {
-      ctx.body = {
-        code: 400,
-        msg: '用户名存在',
-      }
-      return
-    }
-    // 插入
-    const result = await query(`insert into users (username, password)
-																values ('${username}', '${password}')`)
-    // console.log(`result----`, result)
+    // 查询
+    const result = await insterUser({ username, password })
     // 反馈
-    if (result.affectedRows === 1) {
+    if (result) {
       ctx.body = {
         code: 200,
         msg: '注册成功',
       }
     } else {
+      ctx.status = 400
       ctx.body = {
         code: 400,
-        msg: '写入用户注册信息失败',
+        msg: '注册失败',
       }
     }
   }
@@ -40,7 +26,7 @@ class UserController {
     // 参数
     const { username, password } = ctx.request.body
 
-    // 参数校验
+    // 校验
     ctx.verifyParams({
       username: 'string',
       password: { type: 'string', required: true },
@@ -76,6 +62,7 @@ class UserController {
       // }
     })
 
+    // 查询
     const user = await findUser({ username, password })
 
     // 反馈
@@ -92,6 +79,27 @@ class UserController {
       ctx.body = {
         code: 400,
         msg: '登录失败',
+      }
+    }
+  }
+
+  async getUserInfo(ctx) {
+    // 参数
+    const { userid } = ctx
+    // 查询
+    const userinfo = await findUserInfo(userid)
+    // 反馈
+    if (userinfo.id) {
+      ctx.body = {
+        code: 200,
+        msg: '获取用户信息成功',
+        data: userinfo,
+      }
+    } else {
+      ctx.status = 400
+      ctx.body = {
+        code: 400,
+        msg: '获取用户信息失败',
       }
     }
   }

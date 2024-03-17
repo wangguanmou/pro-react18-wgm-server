@@ -10,15 +10,17 @@ const { prefix } = require('../../config/config.default')
 module.exports = ({ whitelist }) => {
   const prefixWhitelist = Array.from(whitelist, (path) => prefix + path)
   return async (ctx, next) => {
+    const { id } = verify(ctx.request.headers.token)
     if (
       prefixWhitelist.includes(ctx.request.path) || // 先写, 白名单过滤
-      verify(ctx.request.headers.token) // 再写, token校验
+      id // 再写, token校验
     ) {
+      ctx.userid = id
       await next()
     } else {
       ctx.body = {
         code: 401,
-        msg: '没有令牌, 请重新登录',
+        msg: 'token失效, 请重新登录',
       }
     }
   }
